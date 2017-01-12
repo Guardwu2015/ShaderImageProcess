@@ -122,23 +122,29 @@
 				vec4 noise = texture2D( texturenoise, vUv );
 			
 				vec4 color11 = texture2D( texture2, vec2(vUv.x-1.0*h,vUv.y+1.0*h) );
-				if((color11.r+color11.g+color11.b)/3.0>0.8){
+
+				float grey = (color11.r+color11.g+color11.b)/3.0;
+
+				// vec4 yuv = vec4(0.3,0.3,0.4,1.0);
+				// float grey = dot(color11.rgb,yuv.rgb);
+
+				if(grey>0.8){
 				
 					gl_FragColor = vec4(1.0,0.0,0.0,1.0);
 				
 				} else
 				
-				if((color11.r+color11.g+color11.b)/3.0>0.6){
+				if(grey>0.6){
 				
 					gl_FragColor = vec4(1.0,1.0,0.2,1.0);
 				
 				} else
 				
-				if((color11.r+color11.g+color11.b)/3.0>0.4){
+				if(grey>0.4){
 					gl_FragColor = vec4(0.0,1.0,0.2,1.0);
 				} else
 				
-				if((color11.r+color11.g+color11.b)/3.0>0.2){
+				if(grey>0.2){
 					gl_FragColor = vec4( 0.0,0.0,1.0,1.0);
 				}
 
