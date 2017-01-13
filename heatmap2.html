@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>一阶梯度算法</title>
+		<title>热力图</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -34,7 +34,7 @@
 	<body>
 
 		<div id="container"></div>
-		<div id="info"><a href="" target="_blank">数字图像处理</a> 一阶梯度算法 浮雕 power by <a href="https://github.com/ChowBu" target="_blank">王振</a></div>
+		<div id="info"><a href="" target="_blank">数字图像处理</a> 热力图 power by <a href="https://github.com/ChowBu" target="_blank">王振</a></div>
 
 		<script src="js/three.min.js"></script>
 		<script src="js/Detector.js"></script>
@@ -84,73 +84,62 @@
 
 		<script id="vertexShaderprocess" type="x-shader/x-vertex">
 
-			uniform vec2 uvScale;
-			varying vec2 vUv;
+			
+			attribute float size;
+			attribute vec3 pcolor;
 
-			void main()
+			varying vec3 vColor;
+
+			void main() 
 			{
 
-				vUv = uvScale * uv;
-				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-				gl_Position = projectionMatrix * mvPosition;
+				vColor = pcolor;
 
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+
+				gl_PointSize = size *2.0;
+
+				gl_Position = projectionMatrix * mvPosition;
 			}
 
 	    </script>
 
 		<script id="fragmentShaderprocess" type="x-shader/x-fragment">
 
-			uniform float time;
-			uniform vec2 resolution;
-
-			uniform float fogDensity;
-			uniform vec3 fogColor;
-
-			uniform sampler2D texturenoise;
-			uniform sampler2D texture2;
-
-			varying vec2 vUv;
-
-			void main( void ) {
+		uniform sampler2D texture;
+		
+		varying vec3 vColor;
+		
+		void main() 
+		{
 			
-				float h = 1.0/512.0;
-
-
-
-				vec2 position = -1.0 + 2.0 * vUv;
-
-				vec4 noise = texture2D( texturenoise, vUv );
+			vec4 outColor = texture2D( texture, gl_PointCoord );
 			
-				vec4 color11 = texture2D( texture2, vec2(vUv.x-1.0*h,vUv.y+1.0*h) );
+			// gl_FragColor = outColor * vec4( vColor, 1.0 );
+			float grey = (outColor.r + outColor.g + outColor.b)/3.0;
 
-				float grey = (color11.r+color11.g+color11.b)/3.0;
-
-				// vec4 yuv = vec4(0.3,0.3,0.4,1.0);
-				// float grey = dot(color11.rgb,yuv.rgb);
-
-				if(grey>0.8){
-				
-					gl_FragColor = vec4(1.0,0.0,0.0,1.0);
-				
-				} else
-				
-				if(grey>0.6){
-				
-					gl_FragColor = vec4(1.0,1.0,0.2,1.0);
-				
-				} else
-				
-				if(grey>0.4){
-					gl_FragColor = vec4(0.0,1.0,0.2,1.0);
-				} else
-				
-				if(grey>0.2){
-					gl_FragColor = vec4( 0.0,0.0,1.0,1.0);
-				}
-
-                //太暗了所以加点亮度
-				// gl_FragColor = color11;
+			if(outColor.a>0.8){
+			
+			gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+			
+			} else
+			
+			if(outColor.a>0.6){
+			
+			gl_FragColor = vec4(1.0,1.0,0.2,1.0);
+			
+			} else
+			
+			if(outColor.a>0.4){
+			gl_FragColor = vec4(0.0,1.0,0.2,1.0);
+			} else
+			
+			if(outColor.a>0.2){
+			gl_FragColor = vec4( 0.0,0.0,1.0,1.0);
 			}
+			
+		// gl_FragColor = outColor;
+		}
 
 		</script>
 
@@ -210,8 +199,10 @@
 				material = new THREE.ShaderMaterial( {
 
 					uniforms: uniforms,
-					vertexShader: document.getElementById( 'vertexShader1' ).textContent,
-					fragmentShader: document.getElementById( 'fragmentShader1' ).textContent
+					vertexShader: 
+					document.getElementById( 'vertexShader1' ).textContent,
+					fragmentShader: 
+					document.getElementById( 'fragmentShader1' ).textContent
 
 				} );
 
@@ -219,7 +210,6 @@
 				mesh.position.x = -0.55;
 				scene.add( mesh );
 
-				//////////////////////////////////////////
 				
 				uniformsprocess = {
 
@@ -234,20 +224,65 @@
 
 				};
 
-				uniformsprocess.texturenoise.value.wrapS = uniformsprocess.texturenoise.value.wrapT = THREE.RepeatWrapping;
-				uniformsprocess.texture2.value.wrapS = uniformsprocess.texture2.value.wrapT = THREE.RepeatWrapping;
+				uniformsprocess.texturenoise.value.wrapS 
+				= uniformsprocess.texturenoise.value.wrapT 
+				= THREE.RepeatWrapping;
+
+				uniformsprocess.texture2.value.wrapS 
+				= uniformsprocess.texture2.value.wrapT 
+				= THREE.RepeatWrapping;
 
 				var size = 0.65;
+				var sprite = THREE.ImageUtils.loadTexture( "./img/lensflare0_alpha.png" ); 
+				var uniforms1 = {
+
+					texture:   { type: "t", value: sprite }
+
+				};
+
+				var attributes = {
+
+					size:  { type: 'f', value: [] },
+					pcolor: { type: 'c', value: [] }
+
+				};
+
 
 				materialprocess = new THREE.ShaderMaterial( {
 
-					uniforms: uniformsprocess,
-					vertexShader: document.getElementById( 'vertexShaderprocess' ).textContent,
-					fragmentShader: document.getElementById( 'fragmentShaderprocess' ).textContent
+					uniforms: uniforms1,
+					attributes: attributes,
+					
+					vertexShader: 
+					document.getElementById( 'vertexShaderprocess' ).textContent,
+
+					fragmentShader: 
+					document.getElementById( 'fragmentShaderprocess' ).textContent,
+					blending: 2,
+					// depthWrite: false,
+					transparent: true,
+					// depthTest:false
 
 				} );
+				var geometry = new THREE.Geometry();
+				for ( i = 0; i < 500; i ++ ) {
 
-				meshprocess = new THREE.Mesh( new THREE.PlaneBufferGeometry( 1, 1 ), materialprocess );
+					attributes.size.value.push( 100.0 );
+
+					var vertex = new THREE.Vector3();
+					vertex.x = Math.random()-0.5;
+					vertex.y = Math.random()-0.5;
+					vertex.z = -0.5;
+
+					geometry.vertices.push( vertex );
+
+				}
+				
+
+
+
+
+				meshprocess = new THREE.PointCloud( geometry, materialprocess );
 				meshprocess.position.x = 0.55;
 				scene.add( meshprocess );
 
@@ -269,10 +304,11 @@
 
 			}
 
+
 			function onWindowResize( event ) {
 
-				uniforms.resolution.value.x = window.innerWidth;
-				uniforms.resolution.value.y = window.innerHeight;
+				// uniforms.resolution.value.x = window.innerWidth;
+				// uniforms.resolution.value.y = window.innerHeight;
 				uniformsprocess.resolution.value.x = window.innerWidth;
 				uniformsprocess.resolution.value.y = window.innerHeight;
 
@@ -300,7 +336,7 @@
 
 				var delta = 5 * clock.getDelta();
 
-				uniforms.time.value += 0.2 * delta;
+				// uniforms.time.value += 0.2 * delta;
 				uniformsprocess.time.value += 0.2 * delta;
 
 				renderer.clear();
